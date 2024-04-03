@@ -1,0 +1,166 @@
+import java.io.File
+
+/**
+ * Reads the input file, solves the 3-In-A-Row puzzle, and prints the solution or a message if no solution is found.
+ */     
+fun main() {
+    val inputFileName = "input.txt"
+    val inputLines = File(inputFileName).readLines()
+
+    // Parse input
+    val n = inputLines[0].toInt()
+    val initialBoard = inputLines.subList(1, n + 1).toTypedArray()
+
+    // Solve puzzle
+    val solution = solveTiarPuzzle(n, initialBoard)
+
+    // Print solution or message
+    if (solution != null) {
+        solution.forEach { println(it) }
+    } else {
+        println("There is no solution")
+    }
+}
+
+/**
+ * Solves the 3-In-A-Row puzzle and returns the solution or null if no solution is found.
+ */
+fun solveTiarPuzzle(n: Int, initialBoard: Array<String>): Array<String>? {
+    val emptyCells = mutableListOf<Pair<Int, Int>>()
+
+    // Identify empty cells
+    for (i in 0 ..< n) {
+        for (j in 0 ..< n) {
+            if (initialBoard[i][j] == '-') {
+                emptyCells.add(Pair(i, j))
+            }
+        }
+    }
+
+    // Initialize result array
+    val result = Array(n) { CharArray(n) { ' ' } }
+
+    // Solve the puzzle
+    val solved = solve(0, n, emptyCells, initialBoard, result)
+
+    // Return the solution or null
+    return solved?.map { it.joinToString("") }?.toTypedArray()
+}
+
+/**
+ * Recursive function to solve the 3-In-A-Row puzzle using backtracking.
+ */
+fun solve(
+    index: Int,
+    n: Int,
+    emptyCells: List<Pair<Int, Int>>,
+    initialBoard: Array<String>,
+    result: Array<CharArray>
+): Array<CharArray>? {
+    // Base case: if all cells are filled, return the result
+    if (index == emptyCells.size) {
+        return result
+    }
+
+    val (i, j) = emptyCells[index]
+
+    // Try both colors ('B' and 'W') for the current cell
+    for (color in listOf('B', 'W')) {
+        result[i][j] = color
+        println("Trying $color at position ($i, $j)")
+        printResult(result, n)
+
+        // Check if the partial board is valid
+        if (isValidPartialBoard(index + 1, n, result, initialBoard) && isValidBoard(n, result, initialBoard)) {
+            // Recursive call to solve the next empty cell
+            val solution = solve(index + 1, n, emptyCells, initialBoard, result)
+            if (solution != null) {
+                return solution
+            }
+        }
+    }
+
+    // Backtrack: reset the current cell and explore the other color
+    result[i][j] = ' '
+    println("Backtracking at position ($i, $j)")
+    printResult(result, n)
+
+    return null
+}
+
+/**
+ * Prints the current state of the board.
+ */
+fun printResult(result: Array<CharArray>, n: Int) {
+    println("Current state:")
+    for (i in 0 ..< n) {
+        println(result[i].joinToString(""))
+    }
+    println()
+}
+
+/**
+ * Checks if the partial board up to the given index is valid.
+ */
+fun isValidPartialBoard(index: Int, n: Int, result: Array<CharArray>, initialBoard: Array<String>): Boolean {
+    for (k in 0 ..< index) {
+        if (!isValidRow(k, n, result, initialBoard) || !isValidColumn(k, n, result, initialBoard) || !isValidCell(k, n, result, initialBoard)) {
+            return false
+        }
+    }
+    return true
+}
+
+/**
+ * Checks if the entire board is valid.
+ */
+fun isValidBoard(n: Int, result: Array<CharArray>, initialBoard: Array<String>): Boolean {
+    for (i in 0 ..< n) {
+        if (!isValidRow(i, n, result, initialBoard) || !isValidColumn(i, n, result, initialBoard) || !isValidCell(i, n, result, initialBoard)) {
+            return false
+        }
+    }
+    return true
+}
+
+/**
+ * Checks if a row is valid.
+ */
+fun isValidRow(row: Int, n: Int, result: Array<CharArray>, initialBoard: Array<String>): Boolean {
+    val countB = result[row].count { it == 'B' }
+    val countW = result[row].count { it == 'W' }
+    val initialCountB = initialBoard[row].count { it == 'B' }
+    val initialCountW = initialBoard[row].count { it == 'W' }
+
+    println("Row $row: B=$countB, W=$countW, Initial B=$initialCountB, Initial W=$initialCountW")
+
+    return countB == countW && initialCountB == initialCountW
+}
+
+/**
+ * Checks if a column is valid.
+ */
+fun isValidColumn(column: Int, n: Int, result: Array<CharArray>, initialBoard: Array<String>): Boolean {
+    val countB = result.count { it[column] == 'B' }
+    val countW = result.count { it[column] == 'W' }
+    val initialCountB = initialBoard.count { it[column] == 'B' }
+    val initialCountW = initialBoard.count { it[column] == 'W' }
+
+    println("Column $column: B=$countB, W=$countW, Initial B=$initialCountB, Initial W=$initialCountW")
+
+    return countB == countW && initialCountB == initialCountW
+}
+
+/**
+ * Checks if a cell is valid.
+ */
+fun isValidCell(index: Int, n: Int, result: Array<CharArray>, initialBoard: Array<String>): Boolean {
+    for (i in 0 ..< n) {
+        for (j in 0 ..< n) {
+            if (result[i][j] != ' ' && initialBoard[i][j] != result[i][j]) {
+                return false
+            }
+        }
+    }
+    return true
+}
